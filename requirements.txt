@@ -1,0 +1,6 @@
+streamlit>=1.22
+catboost>=1.2
+shap>=0.42
+pandas>=1.5
+matplotlib>=3.7
+joblib>=1.2
