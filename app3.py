@@ -449,44 +449,20 @@ with st.sidebar:
         "ACR": "Urine Protein/Creatinine Ratio"
     }
 
-    # 添加自定义CSS以允许清空数字输入框
-    st.markdown("""
-    <style>
-    /* 允许数字输入框被清空 */
-    input[type="number"]::-webkit-outer-spin-button,
-    input[type="number"]::-webkit-inner-spin-button {
-        -webkit-appearance: none;
-        margin: 0;
-    }
-    input[type="number"] {
-        -moz-appearance: textfield;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
     for feat in features:
-        # 使用数字输入框，但添加一个清除按钮
-        col1, col2 = st.columns([4, 1])
-        with col1:
-            # 使用session_state来跟踪每个输入框的值
-            if f"input_{feat}" not in st.session_state:
-                st.session_state[f"input_{feat}"] = 0.0
-
-            inputs[feat] = st.number_input(
-                feat,
-                value=st.session_state[f"input_{feat}"],
-                key=f"num_input_{feat}",
-                format="%.2f"
-            )
-            # 更新session_state中的值
-            st.session_state[f"input_{feat}"] = inputs[feat]
-
-        with col2:
-            # 添加清除按钮
-            if st.button("×", key=f"clear_{feat}"):
-                st.session_state[f"input_{feat}"] = 0.0
-                st.rerun()
-
+        # 使用文本输入而不是数字输入，允许空值
+        input_text = st.text_input(feat, value="", key=f"input_{feat}")
+        
+        # 验证输入是否为有效数字
+        if input_text.strip() == "":
+            inputs[feat] = 0.0  # 空输入默认为0.0
+        else:
+            try:
+                inputs[feat] = float(input_text)
+            except ValueError:
+                st.error(f"请输入有效的数字值 for {feat}")
+                inputs[feat] = 0.0
+        
         st.markdown(f'<div class="unit-tooltip">{units[feat]}</div>', unsafe_allow_html=True)
 # 预测与解释
 if st.button(tr("start_assessment"), type="primary"):
@@ -646,4 +622,5 @@ if st.session_state.user_type == "investigator":
             sample_df.to_csv(history_path, index=False)
             st.rerun()
 else:
+
     st.info(tr("login_prompt"))
