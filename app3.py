@@ -10,6 +10,8 @@ from datetime import datetime
 import csv
 import platform
 import pytz
+import streamlit.components.v1 as components
+
 # 在文件顶部添加平台检测
 is_windows = platform.system() == 'Windows'
 
@@ -435,17 +437,108 @@ st.markdown("""
     margin-top: -10px;
     margin-bottom: 10px;
 }
-/* 隐藏数字输入框的默认箭头 */
-input[type="number"]::-webkit-outer-spin-button,
-input[type="number"]::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
+/* 自定义数字输入框样式 */
+.custom-number-input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 0.25rem;
 }
-input[type="number"] {
-    -moz-appearance: textfield;
+.arrow-buttons {
+    display: flex;
+    flex-direction: column;
+    margin-left: 5px;
+}
+.arrow-btn {
+    width: 20px;
+    height: 15px;
+    font-size: 10px;
+    padding: 0;
+    line-height: 1;
+    margin-bottom: 2px;
+}
+.input-container {
+    display: flex;
+    align-items: center;
 }
 </style>
 """, unsafe_allow_html=True)
+
+# 初始化session_state
+if 'clinical_inputs' not in st.session_state:
+    st.session_state.clinical_inputs = {}
+
+# JavaScript代码用于处理输入框行为和箭头按钮
+input_js = """
+<script>
+// 处理箭头按钮点击
+function incrementValue(inputId) {
+    const input = document.getElementById(inputId);
+    let currentValue = parseFloat(input.value) || 0;
+    input.value = (currentValue + 0.1).toFixed(2);
+    // 触发input事件以确保Streamlit捕获值变化
+    input.dispatchEvent(new Event('input', {bubbles: true}));
+}
+
+function decrementValue(inputId) {
+    const input = document.getElementById(inputId);
+    let currentValue = parseFloat(input.value) || 0;
+    input.value = Math.max(0, (currentValue - 0.1).toFixed(2));
+    // 触发input事件以确保Streamlit捕获值变化
+    input.dispatchEvent(new Event('input', {bubbles: true}));
+}
+
+// 处理输入框焦点和输入事件
+function handleInputFocus(input) {
+    if (input.value === '0.00') {
+        input.value = '';
+    }
+}
+
+function handleInputBlur(input, inputId) {
+    if (input.value === '') {
+        // 保持为空，不设置回0.00
+    } else if (!isNaN(parseFloat(input.value))) {
+        input.value = parseFloat(input.value).toFixed(2);
+    } else {
+        input.value = '0.00';
+    }
+    
+    // 触发input事件以确保Streamlit捕获值变化
+    input.dispatchEvent(new Event('input', {bubbles: true}));
+}
+
+// 限制输入为数字和小数点
+function validateNumberInput(event) {
+    const key = event.key;
+    // 允许数字、小数点、退格键、删除键、箭头键和Tab键
+    if (!/[\d.]/.test(key) && 
+        !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(key)) {
+        event.preventDefault();
+    }
+    
+    // 防止输入多个小数点
+    if (key === '.' && event.target.value.includes('.')) {
+        event.preventDefault();
+    }
+}
+
+// 页面加载完成后添加事件监听器
+document.addEventListener('DOMContentLoaded', function() {
+    // 为所有自定义数字输入框添加事件监听器
+    const inputs = document.querySelectorAll('.custom-number-input');
+    inputs.forEach(input => {
+        input.addEventListener('keydown', validateNumberInput);
+        input.addEventListener('focus', function() {
+            handleInputFocus(this);
+        });
+        input.addEventListener('blur', function() {
+            handleInputBlur(this, this.id);
+        });
+    });
+});
+</script>
+"""
 
 # 用户信息输入
 with st.sidebar:
@@ -454,7 +547,6 @@ with st.sidebar:
     gender = st.selectbox("Gender", ["Male", "Female", "Other"])
 
     st.header("Clinical Indicators")
-    inputs = {}
     features = ["Cortisol", "CRP", "Duration", "CysC", "C-P2", "BUN", "APTT", "RBG", "FT3", "ACR"]
     units = {
         "Cortisol": "μg/L",
@@ -469,19 +561,64 @@ with st.sidebar:
         "ACR": "Urine Protein/Creatinine Ratio"
     }
 
+    # 注入JavaScript
+    components.html(input_js, height=0)
+    
     for feat in features:
-        # 使用st.number_input代替st.text_input
-        input_val = st.number_input(
-            feat,
-            min_value=0.0,
-            value=0.0,  # 默认值
-            step=0.1,   # 点击箭头的步长
-            format="%.2f",  # 显示两位小数
-            key=f"input_{feat}"
+        # 初始化session_state中的值
+        if feat not in st.session_state.clinical_inputs:
+            st.session_state.clinical_inputs[feat] = "0.00"
+        
+        # 创建输入容器
+        st.markdown(f'<div class="input-container">', unsafe_allow_html=True)
+        
+        # 创建自定义文本输入框
+        input_id = f"input_{feat}"
+        input_html = f'''
+        <input type="text" 
+               id="{input_id}" 
+               class="custom-number-input" 
+               value="{st.session_state.clinical_inputs[feat]}"
+               onchange="document.getElementById('hidden_{input_id}').value = this.value; 
+                         document.getElementById('hidden_{input_id}').dispatchEvent(new Event('input', {{bubbles: true}}));">
+        '''
+        st.markdown(input_html, unsafe_allow_html=True)
+        
+        # 创建隐藏的Streamlit输入框用于捕获值
+        hidden_input = st.text_input(
+            feat, 
+            value=st.session_state.clinical_inputs[feat], 
+            key=f"hidden_{feat}",
+            label_visibility="collapsed"
         )
         
-        inputs[feat] = input_val
+        # 更新session_state
+        st.session_state.clinical_inputs[feat] = hidden_input
+        
+        # 添加上下箭头按钮
+        arrow_html = f'''
+        <div class="arrow-buttons">
+            <button class="arrow-btn" onclick="incrementValue('{input_id}')">▲</button>
+            <button class="arrow-btn" onclick="decrementValue('{input_id}')">▼</button>
+        </div>
+        '''
+        st.markdown(arrow_html, unsafe_allow_html=True)
+        
+        st.markdown('</div>', unsafe_allow_html=True)
         st.markdown(f'<div class="unit-tooltip">{units[feat]}</div>', unsafe_allow_html=True)
+        
+        # 处理输入值
+        if st.session_state.clinical_inputs[feat] == "":
+            inputs[feat] = None  # 空值
+        else:
+            try:
+                inputs[feat] = float(st.session_state.clinical_inputs[feat])
+            except ValueError:
+                st.error(f"Please enter a valid numeric value for {feat}")
+                inputs[feat] = 0.0
+
+# 显示当前输入值（用于调试）
+st.write("Current inputs:", inputs)
 # 预测与解释
 if st.button(tr("start_assessment"), type="primary"):
     if not name:
@@ -642,6 +779,7 @@ if st.session_state.user_type == "investigator":
 else:
 
     st.info(tr("login_prompt"))
+
 
 
 
