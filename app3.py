@@ -80,7 +80,16 @@ translations = {
         'low_risk': 'Low Risk',
         'medium_risk': 'Medium Risk',
         'high_risk': 'High Risk',
-        'risk_level': 'Risk Level'
+        'risk_level': 'Risk Level',
+        'debug_history': 'Debug History',
+        'history_file_path': 'History file path',
+        'file_exists': 'File exists',
+        'file_size': 'File size',
+        'bytes': 'bytes',
+        'file_content': 'File content',
+        'failed_to_read_file': 'Failed to read file content',
+        'create_sample_data': 'Create Sample Data',
+        'sample_patient': 'Sample Patient'
     },
     'zh': {
         'title': '糖尿病视网膜病变风险评估系统',
@@ -121,7 +130,16 @@ translations = {
         'low_risk': '低风险',
         'medium_risk': '中风险',
         'high_risk': '高风险',
-        'risk_level': '风险等级'
+        'risk_level': '风险等级',
+        'debug_history': '调试历史记录',
+        'history_file_path': '历史文件路径',
+        'file_exists': '文件存在',
+        'file_size': '文件大小',
+        'bytes': '字节',
+        'file_content': '文件内容',
+        'failed_to_read_file': '读取文件内容失败',
+        'create_sample_data': '创建示例数据',
+        'sample_patient': '示例患者'
     }
 }
 
@@ -315,7 +333,7 @@ if not st.session_state.logged_in:
 
         /* 移除选中选项卡的底部边框 */
         .stTabs [aria-selected="true"] {
-            background-color: #1f4e79;
+            background-color: 1f4e79;
             color: white;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
             border: 2px solid #1f4e79 !important;
@@ -450,20 +468,28 @@ with st.sidebar:
     }
 
     for feat in features:
-        # 使用文本输入而不是数字输入，允许空值
-        input_text = st.text_input(feat, value="", key=f"input_{feat}")
+        # 创建两列布局：输入框和单位
+        col1, col2 = st.columns([3, 1])
 
-        # 验证输入是否为有效数字
-        if input_text.strip() == "":
-            inputs[feat] = 0.0  # 空输入默认为0.0
-        else:
-            try:
-                inputs[feat] = float(input_text)
-            except ValueError:
-                st.error(f"请输入有效的数字值 for {feat}")
-                inputs[feat] = 0.0
+        with col1:
+            # 使用文本输入而不是数字输入，允许空值
+            input_text = st.text_input(feat, value="", key=f"input_{feat}")
 
-        st.markdown(f'<div class="unit-tooltip">{units[feat]}</div>', unsafe_allow_html=True)
+            # 验证输入是否为有效数字
+            if input_text.strip() == "":
+                inputs[feat] = 0.0  # 空输入默认为0.0
+            else:
+                try:
+                    inputs[feat] = float(input_text)
+                except ValueError:
+                    st.error(f"请输入有效的数字值 for {feat}")
+                    inputs[feat] = 0.0
+
+        with col2:
+            # 在右侧显示单位
+            st.markdown(f'<div style="margin-top: 28px; color: #666; font-size: 12px;">{units[feat]}</div>',
+                        unsafe_allow_html=True)
+
 # 预测与解释
 if st.button(tr("start_assessment"), type="primary"):
     if not name:
@@ -536,17 +562,17 @@ if st.session_state.user_type == "investigator":
     history_df = load_history()
 
     # 添加调试按钮
-    if st.sidebar.button("调试历史记录"):
-        st.sidebar.write(f"历史文件路径: {history_path}")
-        st.sidebar.write(f"文件存在: {os.path.exists(history_path)}")
+    if st.sidebar.button(tr("debug_history")):
+        st.sidebar.write(f"{tr('history_file_path')}: {history_path}")
+        st.sidebar.write(f"{tr('file_exists')}: {os.path.exists(history_path)}")
         if os.path.exists(history_path):
-            st.sidebar.write(f"文件大小: {os.path.getsize(history_path)} 字节")
+            st.sidebar.write(f"{tr('file_size')}: {os.path.getsize(history_path)} {tr('bytes')}")
             try:
                 with open(history_path, 'r', encoding='utf-8') as f:
                     content = f.read()
-                st.sidebar.text_area("文件内容", content, height=200)
+                st.sidebar.text_area(tr("file_content"), content, height=200)
             except Exception as e:
-                st.sidebar.error(f"读取文件内容失败: {str(e)}")
+                st.sidebar.error(f"{tr('failed_to_read_file')}: {str(e)}")
 
     if not history_df.empty:
         # 添加索引列以便选择
@@ -601,10 +627,10 @@ if st.session_state.user_type == "investigator":
     else:
         st.info(tr("no_history"))
         # 提供创建示例数据的选项
-        if st.button("创建示例数据"):
+        if st.button(tr("create_sample_data")):
             sample_data = {
                 "Timestamp": [datetime.now(pytz.timezone('Asia/Shanghai')).strftime("%Y-%m-%d %H:%M:%S")],
-                "Name": ["示例患者"],
+                "Name": [tr("sample_patient")],
                 "Gender": ["Male"],
                 "Cortisol": [15.2],
                 "CRP": [3.5],
