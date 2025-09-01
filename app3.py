@@ -458,8 +458,7 @@ with st.sidebar:
             input_text = st.text_input(
                 feat, 
                 value="0.00",  # 默认显示0.00
-                key=f"input_{feat}",
-                help=f"单位: {units[feat]}"
+                key=f"input_{feat}"
             )
             
             # 验证输入是否为有效数字
@@ -473,23 +472,29 @@ with st.sidebar:
                     inputs[feat] = 0.0
         
         with col2:
-            # 添加上下箭头按钮
-            st.markdown("<div style='margin-top: 28px;'>", unsafe_allow_html=True)
+            # 添加上下箭头按钮，样式与原始版本保持一致
+            st.markdown("<div style='margin-top: 28px; display: flex; flex-direction: column;'>", unsafe_allow_html=True)
+            
+            # 上箭头按钮
             if st.button("▲", key=f"up_{feat}"):
                 # 增加数值
                 current_val = inputs.get(feat, 0.0) or 0.0
                 inputs[feat] = round(current_val + 0.1, 2)
                 # 更新文本输入框的值
-                st.session_state[f"input_{feat}"] = str(inputs[feat])
+                st.session_state[f"input_{feat}"] = f"{inputs[feat]:.2f}"
             
+            # 下箭头按钮
             if st.button("▼", key=f"down_{feat}"):
                 # 减少数值
                 current_val = inputs.get(feat, 0.0) or 0.0
                 inputs[feat] = max(0.0, round(current_val - 0.1, 2))
                 # 更新文本输入框的值
-                st.session_state[f"input_{feat}"] = str(inputs[feat])
+                st.session_state[f"input_{feat}"] = f"{inputs[feat]:.2f}"
+                
             st.markdown("</div>", unsafe_allow_html=True)
         
+        # 单位显示，保持与原始版本相同的样式
+        st.markdown(f'<div class="unit-tooltip">{units[feat]}</div>', unsafe_allow_html=True)
         st.markdown(f'<div class="unit-tooltip">{units[feat]}</div>', unsafe_allow_html=True)
 # 预测与解释
 if st.button(tr("start_assessment"), type="primary"):
@@ -650,5 +655,6 @@ if st.session_state.user_type == "investigator":
             st.rerun()
 else:
     st.info(tr("login_prompt"))
+
 
 
