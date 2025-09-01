@@ -449,45 +449,20 @@ with st.sidebar:
         "ACR": "Urine Protein/Creatinine Ratio"
     }
 
-    # 添加自定义JavaScript以改善数字输入框行为
-    st.markdown("""
-    <script>
-    // 在页面加载完成后执行
-    document.addEventListener('DOMContentLoaded', function() {
-        // 找到所有的数字输入框
-        const numberInputs = document.querySelectorAll('input[type="number"]');
-        
-        numberInputs.forEach(input => {
-            // 保存原始值
-            let originalValue = input.value;
-            
-            // 当输入框获得焦点时，如果值是0.00，则清空
-            input.addEventListener('focus', function() {
-                if (this.value === '0.00') {
-                    this.value = '';
-                }
-            });
-            
-            // 当输入框失去焦点时，如果值为空，则恢复为0.00
-            input.addEventListener('blur', function() {
-                if (this.value === '') {
-                    this.value = '0.00';
-                }
-            });
-        });
-    });
-    </script>
-    """, unsafe_allow_html=True)
-
     for feat in features:
-        # 使用Streamlit原生的数字输入框，保留旋转按钮
-        inputs[feat] = st.number_input(
-            feat, 
-            value=0.0, 
-            format="%.2f",
-            key=f"num_input_{feat}"
-        )
-        
+        # 使用文本输入而不是数字输入，允许空值
+        input_text = st.text_input(feat, value="", key=f"input_{feat}")
+
+        # 验证输入是否为有效数字
+        if input_text.strip() == "":
+            inputs[feat] = 0.0  # 空输入默认为0.0
+        else:
+            try:
+                inputs[feat] = float(input_text)
+            except ValueError:
+                st.error(f"请输入有效的数字值 for {feat}")
+                inputs[feat] = 0.0
+
         st.markdown(f'<div class="unit-tooltip">{units[feat]}</div>', unsafe_allow_html=True)
 # 预测与解释
 if st.button(tr("start_assessment"), type="primary"):
@@ -649,6 +624,7 @@ if st.session_state.user_type == "investigator":
 else:
 
     st.info(tr("login_prompt"))
+
 
 
 
