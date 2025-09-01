@@ -450,20 +450,26 @@ with st.sidebar:
     }
 
     for feat in features:
-        # 使用文本输入而不是数字输入，允许空值
-        input_text = st.text_input(feat, value="", key=f"input_{feat}")
-
-        # 验证输入是否为有效数字
-        if input_text.strip() == "":
-            inputs[feat] = 0.0  # 空输入默认为0.0
-        else:
-            try:
-                inputs[feat] = float(input_text)
-            except ValueError:
-                st.error(f"请输入有效的数字值 for {feat}")
-                inputs[feat] = 0.0
-
-        st.markdown(f'<div class="unit-tooltip">{units[feat]}</div>', unsafe_allow_html=True)
+        # 创建两列布局：输入框和单位
+        col1, col2 = st.columns([3, 1])
+        
+        with col1:
+            # 使用文本输入而不是数字输入，允许空值
+            input_text = st.text_input(feat, value="", key=f"input_{feat}")
+            
+            # 验证输入是否为有效数字
+            if input_text.strip() == "":
+                inputs[feat] = 0.0  # 空输入默认为0.0
+            else:
+                try:
+                    inputs[feat] = float(input_text)
+                except ValueError:
+                    st.error(f"请输入有效的数字值 for {feat}")
+                    inputs[feat] = 0.0
+        
+        with col2:
+            # 在右侧显示单位
+            st.markdown(f'<div style="margin-top: 28px; color: #666; font-size: 12px;">{units[feat]}</div>', unsafe_allow_html=True)
 # 预测与解释
 if st.button(tr("start_assessment"), type="primary"):
     if not name:
@@ -623,6 +629,7 @@ if st.session_state.user_type == "investigator":
             st.rerun()
 else:
     st.info(tr("login_prompt"))
+
 
 
 
