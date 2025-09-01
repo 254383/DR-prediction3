@@ -81,13 +81,6 @@ translations = {
         'medium_risk': 'Medium Risk',
         'high_risk': 'High Risk',
         'risk_level': 'Risk Level'
-        'debug_history': 'Debug History',
-        'history_file_path': 'History file path',
-        'file_exists': 'File exists',
-        'file_size': 'File size',
-        'bytes': 'bytes',
-        'file_content': 'File content',
-        'failed_to_read_file': 'Failed to read file content'
     },
     'zh': {
         'title': '糖尿病视网膜病变风险评估系统',
@@ -129,13 +122,6 @@ translations = {
         'medium_risk': '中风险',
         'high_risk': '高风险',
         'risk_level': '风险等级'
-        'debug_history': '调试历史记录',
-        'history_file_path': '历史文件路径',
-        'file_exists': '文件存在',
-        'file_size': '文件大小',
-        'bytes': '字节',
-        'file_content': '文件内容',
-        'failed_to_read_file': '读取文件内容失败'
     }
 }
 
@@ -550,17 +536,17 @@ if st.session_state.user_type == "investigator":
     history_df = load_history()
 
     # 添加调试按钮
-    if st.sidebar.button(tr("debug_history")):
-        st.sidebar.write(f"{tr('history_file_path')}: {history_path}")
-        st.sidebar.write(f"{tr('file_exists')}: {os.path.exists(history_path)}")
+    if st.sidebar.button("调试历史记录"):
+        st.sidebar.write(f"历史文件路径: {history_path}")
+        st.sidebar.write(f"文件存在: {os.path.exists(history_path)}")
         if os.path.exists(history_path):
-            st.sidebar.write(f"{tr('file_size')}: {os.path.getsize(history_path)} {tr('bytes')}")
+            st.sidebar.write(f"文件大小: {os.path.getsize(history_path)} 字节")
             try:
                 with open(history_path, 'r', encoding='utf-8') as f:
                     content = f.read()
-                st.sidebar.text_area(tr("file_content"), content, height=200)
+                st.sidebar.text_area("文件内容", content, height=200)
             except Exception as e:
-                st.sidebar.error(f"{tr('failed_to_read_file')}: {str(e)}")
+                st.sidebar.error(f"读取文件内容失败: {str(e)}")
 
     if not history_df.empty:
         # 添加索引列以便选择
