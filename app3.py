@@ -450,51 +450,19 @@ with st.sidebar:
     }
 
     for feat in features:
-        # 创建两列布局：输入框和按钮
-        col1, col2 = st.columns([4, 1])
-        
-        with col1:
-            # 使用文本输入而不是数字输入，允许空值
-            input_text = st.text_input(
-                feat, 
-                value="0.00",  # 默认显示0.00
-                key=f"input_{feat}"
-            )
-            
-            # 验证输入是否为有效数字
-            if input_text.strip() == "":
-                inputs[feat] = None  # 空输入保持为None
-            else:
-                try:
-                    inputs[feat] = float(input_text)
-                except ValueError:
-                    st.error(f"请输入有效的数字值 for {feat}")
-                    inputs[feat] = 0.0
-        
-        with col2:
-            # 添加上下箭头按钮，样式与原始版本保持一致
-            st.markdown("<div style='margin-top: 28px; display: flex; flex-direction: column;'>", unsafe_allow_html=True)
-            
-            # 上箭头按钮
-            if st.button("▲", key=f"up_{feat}"):
-                # 增加数值
-                current_val = inputs.get(feat, 0.0) or 0.0
-                inputs[feat] = round(current_val + 0.1, 2)
-                # 更新文本输入框的值
-                st.session_state[f"input_{feat}"] = f"{inputs[feat]:.2f}"
-            
-            # 下箭头按钮
-            if st.button("▼", key=f"down_{feat}"):
-                # 减少数值
-                current_val = inputs.get(feat, 0.0) or 0.0
-                inputs[feat] = max(0.0, round(current_val - 0.1, 2))
-                # 更新文本输入框的值
-                st.session_state[f"input_{feat}"] = f"{inputs[feat]:.2f}"
-                
-            st.markdown("</div>", unsafe_allow_html=True)
-        
-        # 单位显示，保持与原始版本相同的样式
-        st.markdown(f'<div class="unit-tooltip">{units[feat]}</div>', unsafe_allow_html=True)
+        # 使用文本输入而不是数字输入，允许空值
+        input_text = st.text_input(feat, value="", key=f"input_{feat}")
+
+        # 验证输入是否为有效数字
+        if input_text.strip() == "":
+            inputs[feat] = 0.0  # 空输入默认为0.0
+        else:
+            try:
+                inputs[feat] = float(input_text)
+            except ValueError:
+                st.error(f"请输入有效的数字值 for {feat}")
+                inputs[feat] = 0.0
+
         st.markdown(f'<div class="unit-tooltip">{units[feat]}</div>', unsafe_allow_html=True)
 # 预测与解释
 if st.button(tr("start_assessment"), type="primary"):
@@ -655,6 +623,7 @@ if st.session_state.user_type == "investigator":
             st.rerun()
 else:
     st.info(tr("login_prompt"))
+
 
 
 
