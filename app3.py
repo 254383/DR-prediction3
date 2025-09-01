@@ -450,15 +450,45 @@ with st.sidebar:
     }
 
     for feat in features:
-        # 使用原始的数字输入方法
-        inputs[feat] = st.number_input(
-            feat, 
-            min_value=0.0, 
-            value=0.0,  # 默认值
-            step=0.1,   # 步长
-            format="%.2f",  # 显示两位小数
-            key=f"input_{feat}"
-        )
+        # 创建两列布局：输入框和按钮
+        col1, col2 = st.columns([4, 1])
+        
+        with col1:
+            # 使用文本输入而不是数字输入，允许空值
+            input_text = st.text_input(
+                feat, 
+                value="0.00",  # 默认显示0.00
+                key=f"input_{feat}",
+                help=f"单位: {units[feat]}"
+            )
+            
+            # 验证输入是否为有效数字
+            if input_text.strip() == "":
+                inputs[feat] = None  # 空输入保持为None
+            else:
+                try:
+                    inputs[feat] = float(input_text)
+                except ValueError:
+                    st.error(f"请输入有效的数字值 for {feat}")
+                    inputs[feat] = 0.0
+        
+        with col2:
+            # 添加上下箭头按钮
+            st.markdown("<div style='margin-top: 28px;'>", unsafe_allow_html=True)
+            if st.button("▲", key=f"up_{feat}"):
+                # 增加数值
+                current_val = inputs.get(feat, 0.0) or 0.0
+                inputs[feat] = round(current_val + 0.1, 2)
+                # 更新文本输入框的值
+                st.session_state[f"input_{feat}"] = str(inputs[feat])
+            
+            if st.button("▼", key=f"down_{feat}"):
+                # 减少数值
+                current_val = inputs.get(feat, 0.0) or 0.0
+                inputs[feat] = max(0.0, round(current_val - 0.1, 2))
+                # 更新文本输入框的值
+                st.session_state[f"input_{feat}"] = str(inputs[feat])
+            st.markdown("</div>", unsafe_allow_html=True)
         
         st.markdown(f'<div class="unit-tooltip">{units[feat]}</div>', unsafe_allow_html=True)
 # 预测与解释
@@ -620,4 +650,5 @@ if st.session_state.user_type == "investigator":
             st.rerun()
 else:
     st.info(tr("login_prompt"))
+
 
