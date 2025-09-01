@@ -450,19 +450,16 @@ with st.sidebar:
     }
 
     for feat in features:
-        # 使用文本输入而不是数字输入，允许空值
-        input_text = st.text_input(feat, value="", key=f"input_{feat}")
-
-        # 验证输入是否为有效数字
-        if input_text.strip() == "":
-            inputs[feat] = 0.0  # 空输入默认为0.0
-        else:
-            try:
-                inputs[feat] = float(input_text)
-            except ValueError:
-                st.error(f"请输入有效的数字值 for {feat}")
-                inputs[feat] = 0.0
-
+        # 使用原始的数字输入方法
+        inputs[feat] = st.number_input(
+            feat, 
+            min_value=0.0, 
+            value=0.0,  # 默认值
+            step=0.1,   # 步长
+            format="%.2f",  # 显示两位小数
+            key=f"input_{feat}"
+        )
+        
         st.markdown(f'<div class="unit-tooltip">{units[feat]}</div>', unsafe_allow_html=True)
 # 预测与解释
 if st.button(tr("start_assessment"), type="primary"):
@@ -623,3 +620,4 @@ if st.session_state.user_type == "investigator":
             st.rerun()
 else:
     st.info(tr("login_prompt"))
+
