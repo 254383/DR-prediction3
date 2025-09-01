@@ -449,40 +449,18 @@ with st.sidebar:
         "ACR": "Urine Protein/Creatinine Ratio"
     }
 
-    # 添加自定义CSS和JavaScript
+    # 添加自定义JavaScript以改善数字输入框行为
     st.markdown("""
-    <style>
-    /* 自定义数字输入框样式 */
-    .custom-number-input {
-        display: flex;
-        align-items: center;
-    }
-    .custom-number-input input {
-        flex: 1;
-        margin-right: 5px;
-    }
-    .custom-number-buttons {
-        display: flex;
-        flex-direction: column;
-    }
-    .custom-number-button {
-        width: 20px;
-        height: 15px;
-        font-size: 12px;
-        padding: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    </style>
-    
     <script>
     // 在页面加载完成后执行
     document.addEventListener('DOMContentLoaded', function() {
-        // 找到所有的自定义数字输入框
-        const customInputs = document.querySelectorAll('.custom-number-input input');
+        // 找到所有的数字输入框
+        const numberInputs = document.querySelectorAll('input[type="number"]');
         
-        customInputs.forEach(input => {
+        numberInputs.forEach(input => {
+            // 保存原始值
+            let originalValue = input.value;
+            
             // 当输入框获得焦点时，如果值是0.00，则清空
             input.addEventListener('focus', function() {
                 if (this.value === '0.00') {
@@ -496,85 +474,19 @@ with st.sidebar:
                     this.value = '0.00';
                 }
             });
-            
-            // 监听输入变化，只允许数字和小数点
-            input.addEventListener('input', function() {
-                this.value = this.value.replace(/[^0-9.]/g, '');
-                
-                // 确保只有一个小数点
-                if ((this.value.match(/\./g) || []).length > 1) {
-                    this.value = this.value.substring(0, this.value.lastIndexOf('.'));
-                }
-                
-                // 限制小数点后最多两位
-                if (this.value.includes('.')) {
-                    let parts = this.value.split('.');
-                    if (parts[1].length > 2) {
-                        this.value = parts[0] + '.' + parts[1].substring(0, 2);
-                    }
-                }
-            });
-        });
-        
-        // 处理自定义加减按钮
-        document.querySelectorAll('.custom-number-button.increment').forEach(button => {
-            button.addEventListener('click', function() {
-                const inputId = this.getAttribute('data-input');
-                const input = document.getElementById(inputId);
-                let value = parseFloat(input.value || 0);
-                input.value = (value + 1).toString();
-            });
-        });
-        
-        document.querySelectorAll('.custom-number-button.decrement').forEach(button => {
-            button.addEventListener('click', function() {
-                const inputId = this.getAttribute('data-input');
-                const input = document.getElementById(inputId);
-                let value = parseFloat(input.value || 0);
-                input.value = (value - 1).toString();
-            });
         });
     });
     </script>
     """, unsafe_allow_html=True)
 
     for feat in features:
-        # 使用自定义的数字输入框
-        input_key = f"custom_input_{feat}"
-        
-        # 初始化session state
-        if input_key not in st.session_state:
-            st.session_state[input_key] = "0.00"
-        
-        # 创建自定义数字输入框
-        col1, col2 = st.columns([6, 1])
-        with col1:
-            # 使用文本输入框，但通过JavaScript限制为数字输入
-            value = st.text_input(
-                feat, 
-                value=st.session_state[input_key],
-                key=f"text_input_{feat}"
-            )
-            
-            # 更新session state
-            st.session_state[input_key] = value
-            
-            # 尝试将输入转换为浮点数
-            try:
-                inputs[feat] = float(value) if value != "" else 0.0
-            except ValueError:
-                st.error(f"请输入有效的数字值 for {feat}")
-                inputs[feat] = 0.0
-                st.session_state[input_key] = "0.00"
-        
-        with col2:
-            # 添加自定义的加减按钮
-            st.markdown(f"""
-            <div class="custom-number-buttons">
-                <button class="custom-number-button increment" data-input="text_input_{feat}" style="margin-bottom: 2px;">▲</button>
-                <button class="custom-number-button decrement" data-input="text_input_{feat}">▼</button>
-            </div>
-            """, unsafe_allow_html=True)
+        # 使用Streamlit原生的数字输入框，保留旋转按钮
+        inputs[feat] = st.number_input(
+            feat, 
+            value=0.0, 
+            format="%.2f",
+            key=f"num_input_{feat}"
+        )
         
         st.markdown(f'<div class="unit-tooltip">{units[feat]}</div>', unsafe_allow_html=True)
 # 预测与解释
@@ -737,5 +649,6 @@ if st.session_state.user_type == "investigator":
 else:
 
     st.info(tr("login_prompt"))
+
 
 
