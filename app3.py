@@ -426,13 +426,34 @@ with col3:
         st.rerun()
     st.caption(f"{tr('logged_in_as')}: {tr(st.session_state.user_type)}")
 
+# 添加CSS样式
+st.markdown("""
+<style>
+.unit-tooltip {
+    font-size: 0.8em;
+    color: #666;
+    margin-top: -10px;
+    margin-bottom: 10px;
+}
+/* 隐藏数字输入框的默认箭头 */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # 用户信息输入
 with st.sidebar:
-    st.header(tr("patient_info"))
-    name = st.text_input(tr("name"))
-    gender = st.selectbox(tr("gender"), [tr("male"), tr("female"), tr("other")])
+    st.header("Patient Information")
+    name = st.text_input("Name")
+    gender = st.selectbox("Gender", ["Male", "Female", "Other"])
 
-    st.header(tr("clinical_indicators"))
+    st.header("Clinical Indicators")
     inputs = {}
     features = ["Cortisol", "CRP", "Duration", "CysC", "C-P2", "BUN", "APTT", "RBG", "FT3", "ACR"]
     units = {
@@ -449,19 +470,17 @@ with st.sidebar:
     }
 
     for feat in features:
-        # 使用文本输入而不是数字输入，允许空值
-        input_text = st.text_input(feat, value="", key=f"input_{feat}")
-
-        # 验证输入是否为有效数字
-        if input_text.strip() == "":
-            inputs[feat] = 0.0  # 空输入默认为0.0
-        else:
-            try:
-                inputs[feat] = float(input_text)
-            except ValueError:
-                st.error(f"请输入有效的数字值 for {feat}")
-                inputs[feat] = 0.0
-
+        # 使用st.number_input代替st.text_input
+        input_val = st.number_input(
+            feat,
+            min_value=0.0,
+            value=0.0,  # 默认值
+            step=0.1,   # 点击箭头的步长
+            format="%.2f",  # 显示两位小数
+            key=f"input_{feat}"
+        )
+        
+        inputs[feat] = input_val
         st.markdown(f'<div class="unit-tooltip">{units[feat]}</div>', unsafe_allow_html=True)
 # 预测与解释
 if st.button(tr("start_assessment"), type="primary"):
@@ -623,6 +642,7 @@ if st.session_state.user_type == "investigator":
 else:
 
     st.info(tr("login_prompt"))
+
 
 
 
