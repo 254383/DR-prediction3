@@ -449,19 +449,57 @@ with st.sidebar:
         "ACR": "Urine Protein/Creatinine Ratio"
     }
 
-    for feat in features:
-        # 使用文本输入而不是数字输入，允许空值
-        input_text = st.text_input(feat, value="", key=f"input_{feat}")
+    # 添加自定义JavaScript以修改数字输入框行为
+    st.markdown("""
+    <script>
+    // 在页面加载完成后执行
+    document.addEventListener('DOMContentLoaded', function() {
+        // 找到所有的数字输入框
+        const numberInputs = document.querySelectorAll('input[type="number"]');
         
-        # 验证输入是否为有效数字
-        if input_text.strip() == "":
-            inputs[feat] = 0.0  # 空输入默认为0.0
-        else:
-            try:
-                inputs[feat] = float(input_text)
-            except ValueError:
-                st.error(f"请输入有效的数字值 for {feat}")
-                inputs[feat] = 0.0
+        numberInputs.forEach(input => {
+            // 保存原始值
+            let originalValue = input.value;
+            
+            // 当输入框获得焦点时，如果值是0.00，则清空
+            input.addEventListener('focus', function() {
+                if (this.value === '0.00') {
+                    this.value = '';
+                }
+            });
+            
+            // 当输入框失去焦点时，如果值为空，则恢复为0.00
+            input.addEventListener('blur', function() {
+                if (this.value === '') {
+                    this.value = '0.00';
+                }
+            });
+            
+            // 监听输入变化，保持用户输入格式
+            input.addEventListener('input', function() {
+                // 如果用户输入了小数点，保留用户输入格式
+                if (this.value.includes('.')) {
+                    let parts = this.value.split('.');
+                    if (parts[1].length > 2) {
+                        this.value = parts[0] + '.' + parts[1].substring(0, 2);
+                    }
+                }
+                // 如果用户输入的是整数，保持整数格式
+                // 不需要额外处理，因为用户输入的就是整数
+            });
+        });
+    });
+    </script>
+    """, unsafe_allow_html=True)
+
+    for feat in features:
+        # 使用数字输入框，保留旋转按钮
+        inputs[feat] = st.number_input(
+            feat, 
+            value=0.0, 
+            format="%.2f",
+            key=f"num_input_{feat}"
+        )
         
         st.markdown(f'<div class="unit-tooltip">{units[feat]}</div>', unsafe_allow_html=True)
 # 预测与解释
@@ -624,3 +662,4 @@ if st.session_state.user_type == "investigator":
 else:
 
     st.info(tr("login_prompt"))
+
