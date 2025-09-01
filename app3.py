@@ -10,7 +10,7 @@ from datetime import datetime
 import csv
 import platform
 import pytz
-
+import streamlit.components.v1 as components
 # 在文件顶部添加平台检测
 is_windows = platform.system() == 'Windows'
 
@@ -427,13 +427,34 @@ with col3:
         st.rerun()
     st.caption(f"{tr('logged_in_as')}: {tr(st.session_state.user_type)}")
 
+# 添加CSS样式
+st.markdown("""
+<style>
+.unit-tooltip {
+    font-size: 0.8em;
+    color: #666;
+    margin-top: -10px;
+    margin-bottom: 10px;
+}
+/* 隐藏数字输入框的默认箭头 */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # 用户信息输入
 with st.sidebar:
-    st.header(tr("patient_info"))
-    name = st.text_input(tr("name"))
-    gender = st.selectbox(tr("gender"), [tr("male"), tr("female"), tr("other")])
+    st.header("Patient Information")
+    name = st.text_input("Name")
+    gender = st.selectbox("Gender", ["Male", "Female", "Other"])
 
-    st.header(tr("clinical_indicators"))
+    st.header("Clinical Indicators")
     inputs = {}
     features = ["Cortisol", "CRP", "Duration", "CysC", "C-P2", "BUN", "APTT", "RBG", "FT3", "ACR"]
     units = {
@@ -450,20 +471,69 @@ with st.sidebar:
     }
 
     for feat in features:
-        # 使用文本输入而不是数字输入，允许空值
-        input_text = st.text_input(feat, value="", key=f"input_{feat}")
-
-        # 验证输入是否为有效数字
-        if input_text.strip() == "":
-            inputs[feat] = 0.0  # 空输入默认为0.0
-        else:
-            try:
-                inputs[feat] = float(input_text)
-            except ValueError:
-                st.error(f"请输入有效的数字值 for {feat}")
-                inputs[feat] = 0.0
-
+        # 创建自定义数字输入框
+        col1, col2 = st.columns([4, 1])
+        
+        with col1:
+            # 使用文本输入，但限制为数字输入
+            input_val = st.text_input(feat, value="0.00", key=f"input_{feat}")
+            
+            # 验证输入
+            if input_val == "":
+                inputs[feat] = None  # 空值
+            else:
+                try:
+                    inputs[feat] = float(input_val)
+                except ValueError:
+                    st.error(f"Please enter a valid numeric value for {feat}")
+                    inputs[feat] = 0.0
+        
+        with col2:
+            # 添加自定义的上下箭头按钮
+            st.markdown("<div style='margin-top: 28px; display: flex; flex-direction: column;'>"
+                       f"<button style='font-size: 10px; padding: 0; height: 14px;' onclick='increment(\"{feat}\")'>▲</button>"
+                       f"<button style='font-size: 10px; padding: 0; height: 14px;' onclick='decrement(\"{feat}\")'>▼</button>"
+                       "</div>", unsafe_allow_html=True)
+        
         st.markdown(f'<div class="unit-tooltip">{units[feat]}</div>', unsafe_allow_html=True)
+
+# 添加JavaScript来处理按钮点击
+components.html("""
+<script>
+function increment(feat) {
+    const input = document.querySelector(`input[key="input_${feat}"]`);
+    let value = parseFloat(input.value) || 0;
+    input.value = (value + 0.1).toFixed(2);
+    input.dispatchEvent(new Event('input', {bubbles: true}));
+}
+
+function decrement(feat) {
+    const input = document.querySelector(`input[key="input_${feat}"]`);
+    let value = parseFloat(input.value) || 0;
+    input.value = Math.max(0, (value - 0.1)).toFixed(2);
+    input.dispatchEvent(new Event('input', {bubbles: true}));
+}
+
+// 添加输入事件处理，允许空值
+document.addEventListener('DOMContentLoaded', function() {
+    const inputs = document.querySelectorAll('input[type="text"]');
+    inputs.forEach(input => {
+        input.addEventListener('input', function() {
+            if (this.value === '') return;
+            if (!/^\d*\.?\d*$/.test(this.value)) {
+                this.value = this.value.slice(0, -1);
+            }
+        });
+        
+        input.addEventListener('focus', function() {
+            if (this.value === '0.00') {
+                this.select();
+            }
+        });
+    });
+});
+</script>
+""", height=0)
 # 预测与解释
 if st.button(tr("start_assessment"), type="primary"):
     if not name:
@@ -624,6 +694,7 @@ if st.session_state.user_type == "investigator":
 else:
 
     st.info(tr("login_prompt"))
+
 
 
 
